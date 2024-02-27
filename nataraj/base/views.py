@@ -79,9 +79,9 @@ def home(request):
 
 
 def room(request, pk):
-    rooms = Room.objects.get(id=pk)
-
-    context = {'room': room}
+    room = Room.objects.get(id=pk)
+    room_messages = room.messages_set.all().order_by('-created')
+    context = {'room': room, 'room_messages': room_messages}
     return render(request, 'base/room.html', context)
 
 
