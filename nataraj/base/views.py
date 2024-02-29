@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Room, Topic, Messages
 from .forms import RoomForm
 
+
 # Create your views here.
 
 """rooms = [
@@ -74,13 +75,18 @@ def home(request):
 
     topics = Topic.objects.all()
     room_count = rooms.count()
-    context = {'rooms': rooms, 'topics': topics, 'room_count': room_count}
+    room_messages = Messages.objects.all()
+
+    context = {'rooms': rooms, 'topics': topics,
+               'room_count': room_count, 'room_messages': room_messages}
     return render(request, 'base/home.html', context)
 
 
 def room(request, pk):
     room = Room.objects.get(id=pk)
-    room_messages = room.messages_set.all().order_by('-created')
+    room_messages = room.messages_set.all()
+
+    participants = room.participants.all()
 
     if request.method == 'POST':
         message = Messages.objects.create(
@@ -88,8 +94,10 @@ def room(request, pk):
             room=room,
             body=request.POST.get('body')
         )
+        room.participants.add(request.user)
+
         return redirect('room', pk=room.id)
-    context = {'room': room, 'room_messages': room_messages}
+    context = {'room': room, 'room_messages': room_messages, 'participants': participants}
     return render(request, 'base/room.html', context)
 
 
@@ -136,4 +144,19 @@ def deleteRoom(request, pk):
         return redirect('home')
 
     context = {'obj': room}
+    return render(request, 'base/delete.html', context)
+
+
+@login_required(login_url='login')
+def deleteMessage(request, pk):
+    message = Messages.objects.get(id=pk)
+
+    if request.user != message.user:
+        return HttpResponse('You are not allowed here!!')
+
+    if request.method == 'POST':
+        message.delete()
+        return redirect('home')
+
+    context = {'obj': message}
     return render(request, 'base/delete.html', context)
