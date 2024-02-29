@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib import messages
+# from django.contrib.messages.middleware import MessageMiddleware
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -8,6 +9,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from .models import Room, Topic, Messages
 from .forms import RoomForm
+
 
 
 # Create your views here.
@@ -83,7 +85,7 @@ def home(request):
 
 
 def room(request, pk):
-    room = Room.objects.get(id=pk)
+    rooms = Room.objects.get(id=pk)
     room_messages = room.messages_set.all()
 
     participants = room.participants.all()
@@ -97,15 +99,22 @@ def room(request, pk):
         room.participants.add(request.user)
 
         return redirect('room', pk=room.id)
-    context = {'room': room, 'room_messages': room_messages, 'participants': participants}
+    context = {'room': rooms, 'room_messages': room_messages, 'participants': participants}
     return render(request, 'base/room.html', context)
 
 
-def userProfile(request, pk):
-    user = User.objects.get(id=pk)
-    # rooms = user.room_set.all()
-    context = {'user': user}
-    return render(request, 'base/profile.html', context)
+def userprofile(request, pk):
+    try:
+        user = User.objects.get(id=pk)
+        rooms = user.room_set.all()
+
+        topics = Topic.objects.all()
+        context = {'user': user, 'rooms': rooms, 'topics': topics}
+        return render(request, 'base/profile.html', context)
+
+    except User.DoesNotExist:
+        # Handle the case where the user does not exist
+        pass
 
 
 @login_required(login_url='login')
